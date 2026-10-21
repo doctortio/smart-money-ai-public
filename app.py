@@ -3167,6 +3167,7 @@ def obter_cliente_db(email: str) -> dict | None:
         return None
     row = dados[0]
     return {
+        "id": row.get("id"),
         "email": row.get("email"),
         "nome": row.get("nome"),
         "senha": row.get("senha_hash"),
@@ -7866,7 +7867,8 @@ if aba_admin is not None:
         bloquear_area_admin_para_cliente()
         try:
             from telegram_worker.admin_center import render_signal_center
-            render_signal_center(st)
+            admin_row = obter_cliente_db(st.session_state.get("usuario_logado", "")) or {}
+            render_signal_center(st, rpc=_sb_rpc if supabase_configurado() else None, admin_id=admin_row.get("id"), admin_email=st.session_state.get("usuario_logado", ""))
         except Exception as exc:
             st.warning(f"Central de Sinais indisponível até concluir a homologação: {type(exc).__name__}")
         with st.expander("🧹 Manutenção global da auditoria", expanded=False):
