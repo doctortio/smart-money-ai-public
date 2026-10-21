@@ -11,6 +11,8 @@ def test_workflow_runs_private_sender_as_module():
     text = workflow.read_text(encoding="utf-8")
     assert "run: python -m scripts.private_test_send" in text
     assert "run: python scripts/private_test_send.py" not in text
+    assert "options: [dry_run, private_test, public_publish]" in text
+    assert "public_publish_guard.py" in text
 
 
 def factory(asset, timeframe):
