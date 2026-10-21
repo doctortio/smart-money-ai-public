@@ -4,6 +4,7 @@ import pytest
 
 from scripts import private_test_send as sender
 from telegram_worker.worker import Signal
+from telegram_worker.public_publisher import bundle_message, publish_public
 
 
 def test_workflow_runs_private_sender_as_module():
@@ -13,6 +14,35 @@ def test_workflow_runs_private_sender_as_module():
     assert "run: python scripts/private_test_send.py" not in text
     assert "options: [dry_run, private_test, public_publish]" in text
     assert "public_publish_guard.py" in text
+
+
+def test_public_bundle_requires_both_assets():
+    with pytest.raises(RuntimeError, match="both_assets_required"):
+        bundle_message([factory("BTCUSDT", "5m")])
+
+
+def test_public_publish_is_blocked_without_authorization(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_DRY_RUN", "false")
+    monkeypatch.delenv("PUBLIC_PUBLISH_AUTHORIZED", raising=False)
+    with pytest.raises(RuntimeError, match="public_publish_not_authorized"):
+        publish_public(__import__("datetime").datetime.now(), factory=factory)
+
+
+def test_public_publish_reserves_once_and_marks_unknown_on_timeout(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_DRY_RUN", "false")
+    monkeypatch.setenv("PUBLIC_PUBLISH_AUTHORIZED", "PUBLIC_PUBLISH_AUTHORIZED")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "@smartmoneyaioficial")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test")
+    class Ledger:
+        def __init__(self): self.calls = []
+        def reserve(self, *args, **kwargs): self.calls.append(("reserve", args, kwargs)); return True
+        def mark(self, *args): self.calls.append(("mark", args))
+    ledger = Ledger()
+    def timeout(_): raise TimeoutError("timeout")
+    with pytest.raises(TimeoutError):
+        publish_public(__import__("datetime").datetime.now(), factory=factory, ledger=ledger, send=timeout)
+    assert ledger.calls[0][0] == "reserve"
+    assert ledger.calls[-1][1][1] == "unknown"
 
 
 def factory(asset, timeframe):
