@@ -1,0 +1,26 @@
+name: Smart Money AI Telegram worker (manual preflight)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: smart-money-telegram-preflight
+      cancel-in-progress: false
+    env:
+      TELEGRAM_DRY_RUN: "true"
+      TELEGRAM_CHAT_ID: "@smartmoneyaioficial"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.txt
+      - run: python -m pip install -r telegram_worker/requirements.txt
+      - run: python -m pytest tests/test_telegram_worker.py -q
+      - run: python scripts/private_test_signals.py
+
+# The production schedule is intentionally not enabled. Before activation,
+# add cron entries converted to UTC and a durable idempotency store.

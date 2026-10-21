@@ -8,3 +8,9 @@ __pycache__/
 supabase/.temp/
 *.csv
 
+# Runtime state and local secrets
+runtime/
+*.local
+
+runtime/*.dpapi
+runtime/telegram_config.local
