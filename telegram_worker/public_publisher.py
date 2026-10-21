@@ -57,12 +57,23 @@ def publish_public(
     send: Callable[[str], int] | None = None,
     config: dict | None = None,
 ) -> int | None:
-    assets = ASSETS
-    timeframe = TIMEFRAME
-    if config is not None:
-        from .signal_center_runtime import validate_persisted_config
+    from .signal_center_runtime import validate_persisted_config
+    dry_run = os.getenv("TELEGRAM_DRY_RUN", "true").strip().lower() == "true"
+    if not dry_run:
+        gateway = ledger_from_env()
+        if gateway is None:
+            raise RuntimeError("signal_center_gateway_missing")
+        config = gateway.get_config()
+    if config is None:
+        if not dry_run:
+            raise RuntimeError("signal_center_config_required")
+        assets, timeframe = ASSETS, TIMEFRAME
+    else:
         runtime = validate_persisted_config(config)
-        if runtime["emergency_stop"]: raise RuntimeError("emergency_stop_active")
+        if runtime["emergency_stop"]:
+            raise RuntimeError("emergency_stop_active")
+        if not dry_run and not runtime["auto_enabled"]:
+            raise RuntimeError("automatic_publication_disabled")
         assets, timeframe = runtime["auto_assets"], runtime["timeframe"]
     if os.getenv("TELEGRAM_DRY_RUN", "true").strip().lower() == "true":
         prepare_public_signals(factory, assets=assets, timeframe=timeframe)
