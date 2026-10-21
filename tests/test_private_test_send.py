@@ -36,7 +36,7 @@ def test_public_publish_reserves_once_and_marks_unknown_on_timeout(monkeypatch):
     class Ledger:
         def __init__(self): self.calls = []
         def reserve(self, *args, **kwargs): self.calls.append(("reserve", args, kwargs)); return True
-        def mark(self, *args): self.calls.append(("mark", args))
+        def mark(self, *args, **kwargs): self.calls.append(("mark", args, kwargs))
     ledger = Ledger()
     def timeout(_): raise TimeoutError("timeout")
     from datetime import datetime
@@ -45,6 +45,7 @@ def test_public_publish_reserves_once_and_marks_unknown_on_timeout(monkeypatch):
         publish_public(datetime(2026, 10, 21, 14, 0, tzinfo=TZ), now=datetime(2026, 10, 21, 14, 0, tzinfo=TZ), factory=factory, ledger=ledger, send=timeout)
     assert ledger.calls[0][0] == "reserve"
     assert ledger.calls[-1][1][1] == "unknown"
+    assert ledger.calls[-1][2]["owner_id"]
 
 
 def test_public_slot_rejects_outside_window():
