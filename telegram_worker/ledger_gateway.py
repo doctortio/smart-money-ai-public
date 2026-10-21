@@ -1,6 +1,6 @@
 """HMAC gateway client; no service_role key is ever used by this client."""
 from __future__ import annotations
-import hashlib, hmac, time, uuid, requests
+import hashlib, hmac, json, time, uuid, requests
 
 class HmacLedgerGateway:
     def __init__(self, url: str, secret: str, *, timeout: float = 15.0):
@@ -8,10 +8,7 @@ class HmacLedgerGateway:
         self.url, self.secret, self.timeout = url.rstrip("/"), secret, timeout
     def _call(self, body: dict) -> bool:
         body = {**body, "method": "POST", "path": "/functions/v1/sma-telegram-ledger", "timestamp": int(time.time()), "nonce": str(uuid.uuid4())}
-        def value(k):
-            v = body.get(k, "")
-            return "" if v is None else str(v)
-        canonical = ".".join(value(k) for k in ("method","path","timestamp","nonce","operation","execution_key","channel","scheduled_at","owner_id","status","message_id")) + "." + __import__("json").dumps(body.get("assets", []), separators=(",", ":")) + "." + value("timeframe")
+        canonical = json.dumps({k: v for k, v in body.items() if k != "signature"}, sort_keys=True, separators=(",", ":"))
         body["signature"] = hmac.new(self.secret.encode(), canonical.encode(), hashlib.sha256).hexdigest()
         r = requests.post(self.url, json=body, timeout=self.timeout); r.raise_for_status(); data = r.json()
         if not data.get("ok"): raise RuntimeError(str(data.get("error", "ledger_rejected")))

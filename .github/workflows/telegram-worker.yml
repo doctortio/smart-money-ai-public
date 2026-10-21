@@ -39,6 +39,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - run: python -m pip install -r requirements.txt -r telegram_worker/requirements.txt pytest
       - run: python scripts/private_test_guard.py
       - name: Block public publication until separately authorized
         if: ${{ inputs.mode == 'public_publish' }}
@@ -53,8 +54,6 @@ jobs:
           TELEGRAM_LEDGER_HMAC_SECRET: ${{ secrets.TELEGRAM_LEDGER_HMAC_SECRET }}
           PUBLIC_PUBLISH_AUTHORIZED: ${{ secrets.PUBLIC_PUBLISH_AUTHORIZED }}
         run: python -m telegram_worker.public_publisher
-      - run: python -m pip install -r requirements.txt
-      - run: python -m pip install -r telegram_worker/requirements.txt
       - run: python -m pytest tests/test_telegram_worker.py -q
       - run: python scripts/private_test_signals.py
       - name: Send one authorized private test message

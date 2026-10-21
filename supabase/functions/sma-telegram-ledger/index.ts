@@ -9,7 +9,10 @@ async function validSignature(secret: string, value: string, supplied: string) {
   if (!/^[0-9a-f]{64}$/.test(raw)) return false;
   return crypto.subtle.verify("HMAC", key, Uint8Array.from(raw.match(/.{2}/g)!.map(x => parseInt(x, 16))), enc.encode(value));
 }
-function canonical(b: Record<string, unknown>) { return [b.method, b.path, b.timestamp, b.nonce, b.operation, b.execution_key, b.channel, b.scheduled_at, b.owner_id ?? "", b.status ?? "", b.message_id ?? "", JSON.stringify(b.assets ?? []), b.timeframe ?? ""].join("."); }
+function canonical(b: Record<string, unknown>) {
+  const clean = Object.fromEntries(Object.entries(b).filter(([key]) => key !== "signature").sort(([a], [b]) => a.localeCompare(b)));
+  return JSON.stringify(clean);
+}
 async function rpc(name: string, payload: Record<string, unknown>) {
   const base = Deno.env.get("SUPABASE_URL")!; const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const r = await fetch(`${base}/rest/v1/rpc/${name}`, { method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify(payload) });
