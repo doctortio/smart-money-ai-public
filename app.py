@@ -7864,6 +7864,11 @@ if aba_admin is not None:
     with aba_admin:
         registrar_evento_demo_unico("Administração", "Aba administrativa carregada")
         bloquear_area_admin_para_cliente()
+        try:
+            from telegram_worker.admin_center import render_signal_center
+            render_signal_center(st)
+        except Exception as exc:
+            st.warning(f"Central de Sinais indisponível até concluir a homologação: {type(exc).__name__}")
         with st.expander("🧹 Manutenção global da auditoria", expanded=False):
             st.warning("Esta ação apaga a auditoria de TODOS os usuários. Faça backup antes de confirmar.")
             confirmar_exclusao_auditoria = st.checkbox(
