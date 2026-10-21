@@ -4915,6 +4915,37 @@ def voltar_para_login_botao(key_suffix: str = "") -> None:
         st.rerun()
 
 
+def render_resultado_confirmacao_email() -> None:
+    """Exibe o resultado do redirecionamento sem repetir a confirmação."""
+    try:
+        resultado = str(st.query_params.get("signup_confirmation", "")).strip().lower()
+    except Exception:
+        resultado = ""
+    if resultado not in {"success", "failed"}:
+        return
+    chave = f"email_confirmation_result:{resultado}"
+    if st.session_state.get("_email_confirmation_result_seen") == chave:
+        return
+    st.session_state["_email_confirmation_result_seen"] = chave
+    try:
+        st.query_params.clear()
+    except Exception:
+        pass
+    st.markdown("<div class='public-shell'>", unsafe_allow_html=True)
+    if resultado == "success":
+        st.success("Cadastro confirmado")
+        st.write("Seu e-mail foi confirmado. Agora você pode entrar no Smart Money AI.")
+        if st.button("Entrar", key="btn_confirmacao_entrar", use_container_width=True):
+            st.session_state["authenticated"] = False
+            st.session_state["usuario_logado"] = ""
+            st.rerun()
+    else:
+        st.error("Link inválido ou expirado")
+        st.write("Solicite um novo cadastro para receber outro link de confirmação.")
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
+
+
 def _base_autorizacao_disponivel() -> bool:
     """Verifica disponibilidade da base com consulta minima, sem listar clientes."""
     if supabase_configurado():
@@ -4962,6 +4993,7 @@ if not _sincronizar_sessao_browser():
 if st.session_state.get("_browser_storage_unavailable"):
     st.warning("O armazenamento deste navegador está indisponível. O login funcionará nesta abertura, mas poderá ser solicitado novamente ao reabrir.")
 render_pagina_legal_publica()
+render_resultado_confirmacao_email()
 exigir_login()
 try:
     registrar_evento_demo_unico("Entrada na Plataforma", "Usuário acessou a área interna")
