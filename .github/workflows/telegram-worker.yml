@@ -43,7 +43,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_PRIVATE_CHAT_ID: ${{ secrets.TELEGRAM_PRIVATE_CHAT_ID }}
           PRIVATE_TEST_CONFIRMATION: ${{ inputs.private_confirmation }}
-        run: python scripts/private_test_send.py
+        run: python -m scripts.private_test_send
 
 # The production schedule is intentionally not enabled. Before activation,
 # add cron entries converted to UTC and a durable idempotency store.

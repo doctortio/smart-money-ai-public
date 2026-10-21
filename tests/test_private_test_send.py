@@ -6,6 +6,13 @@ from scripts import private_test_send as sender
 from telegram_worker.worker import Signal
 
 
+def test_workflow_runs_private_sender_as_module():
+    workflow = Path(__file__).parents[1] / ".github" / "workflows" / "telegram-worker.yml"
+    text = workflow.read_text(encoding="utf-8")
+    assert "run: python -m scripts.private_test_send" in text
+    assert "run: python scripts/private_test_send.py" not in text
+
+
 def factory(asset, timeframe):
     return Signal(asset, "COMPRA", timeframe, "contexto real", "MEDIO", "2026-10-21T12:00:00-03:00")
 
