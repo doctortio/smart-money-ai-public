@@ -22,11 +22,15 @@ Deno.serve(async req => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
   try {
     const b = await req.json() as Record<string, unknown>; const secret = Deno.env.get("TELEGRAM_LEDGER_HMAC_SECRET") || "";
-    if (!secret || b.method !== "POST" || b.path !== "/functions/v1/sma-telegram-ledger" || b.channel !== CHANNEL || !["reserve", "mark"].includes(String(b.operation)) || typeof b.nonce !== "string" || typeof b.execution_key !== "string") return json({ ok: false, error: "invalid_input" }, 400);
+    if (!secret || b.method !== "POST" || b.path !== "/functions/v1/sma-telegram-ledger" || b.channel !== CHANNEL || !["reserve", "mark", "config_get"].includes(String(b.operation)) || typeof b.nonce !== "string" || typeof b.execution_key !== "string") return json({ ok: false, error: "invalid_input" }, 400);
     const ts = Number(b.timestamp); if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > MAX_SKEW) return json({ ok: false, error: "timestamp_expired" }, 401);
     if (!await validSignature(secret, canonical(b), String(b.signature || ""))) return json({ ok: false, error: "invalid_signature" }, 401);
     const claimed = await rpc("sma_telegram_claim_nonce", { p_nonce: b.nonce, p_execution_key: b.execution_key, p_operation: b.operation, p_channel: b.channel, p_expires_at: new Date((ts + MAX_SKEW) * 1000).toISOString() });
     if (!claimed) return json({ ok: false, error: "replay" }, 409);
+    if (b.operation === "config_get") {
+      const config = await rpc("sma_signal_center_worker_config", {});
+      return json({ ok: true, config });
+    }
     if (b.operation === "reserve") {
       const result = await rpc("sma_telegram_reserve_publication", { p_execution_key: b.execution_key, p_channel: b.channel, p_assets: b.assets, p_timeframe: b.timeframe, p_scheduled_at: b.scheduled_at, p_owner_id: b.owner_id });
       return json({ ok: Boolean(result) });
