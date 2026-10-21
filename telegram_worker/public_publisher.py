@@ -35,14 +35,14 @@ def validate_scheduled_slot(scheduled_at: datetime, *, now: datetime | None = No
 
 
 def bundle_message(signals: list[Signal]) -> str:
-    if len(signals) != 2 or {s.asset for s in signals} != set(ASSETS):
+    if len(signals) != 2 or len({s.asset for s in signals}) != 2:
         raise RuntimeError("both_assets_required")
     blocks = [format_message(signal) for signal in signals]
     return "<b>Smart Money AI · sinais oficiais</b>\n\n" + "\n\n".join(blocks)
 
 
-def prepare_public_signals(factory: Callable[[str, str], Signal | None] = existing_motor_factory) -> list[Signal]:
-    signals = [factory(asset, TIMEFRAME) for asset in ASSETS]
+def prepare_public_signals(factory: Callable[[str, str], Signal | None] = existing_motor_factory, *, assets: tuple[str, str] = ASSETS, timeframe: str = TIMEFRAME) -> list[Signal]:
+    signals = [factory(asset, timeframe) for asset in assets]
     if any(signal is None for signal in signals):
         raise RuntimeError("signal_generation_failed")
     return [signal for signal in signals if signal is not None]
@@ -55,9 +55,17 @@ def publish_public(
     factory: Callable[[str, str], Signal | None] = existing_motor_factory,
     ledger: SupabaseLedger | None = None,
     send: Callable[[str], int] | None = None,
+    config: dict | None = None,
 ) -> int | None:
+    assets = ASSETS
+    timeframe = TIMEFRAME
+    if config is not None:
+        from .signal_center_runtime import validate_persisted_config
+        runtime = validate_persisted_config(config)
+        if runtime["emergency_stop"]: raise RuntimeError("emergency_stop_active")
+        assets, timeframe = runtime["auto_assets"], runtime["timeframe"]
     if os.getenv("TELEGRAM_DRY_RUN", "true").strip().lower() == "true":
-        prepare_public_signals(factory)
+        prepare_public_signals(factory, assets=assets, timeframe=timeframe)
         return None
     if os.getenv("PUBLIC_PUBLISH_AUTHORIZED", "") != "PUBLIC_PUBLISH_AUTHORIZED":
         raise RuntimeError("public_publish_not_authorized")
@@ -71,13 +79,13 @@ def publish_public(
     if ledger is None or send is None:
         raise RuntimeError("public_dependencies_missing")
     stamp = validate_scheduled_slot(scheduled_at, now=now)
-    execution_key = f"public|{CHANNEL}|{stamp}|{TIMEFRAME}"
+    execution_key = f"public|{CHANNEL}|{stamp}|{timeframe}"
     owner_id = os.getenv("GITHUB_RUN_ID", "local-public")
-    if not ledger.reserve(execution_key, channel=CHANNEL, assets=list(ASSETS), timeframe=TIMEFRAME, scheduled_at=stamp, owner_id=owner_id):
+    if not ledger.reserve(execution_key, channel=CHANNEL, assets=list(assets), timeframe=timeframe, scheduled_at=stamp, owner_id=owner_id):
         raise RuntimeError("duplicate_public_publication")
     ledger.mark(execution_key, "sending", owner_id=owner_id)
     try:
-        message_id = send(bundle_message(prepare_public_signals(factory)))
+        message_id = send(bundle_message(prepare_public_signals(factory, assets=assets, timeframe=timeframe)))
     except Exception:
         ledger.mark(execution_key, "unknown", owner_id=owner_id)
         raise
