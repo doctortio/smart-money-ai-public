@@ -294,18 +294,30 @@ def _seguranca_operar(acao: str, dados: dict | None = None) -> dict:
     role = str(st.secrets.get("SUPABASE_SERVICE_ROLE_KEY", "")).strip()
     anon = str(st.secrets.get("SUPABASE_ANON_KEY", "")).strip()
     if url or role or anon:
+        corr = uuid.uuid4().hex[:12]
         if not url or not role:
+            logging.getLogger(__name__).warning("AUTH_CONFIG_ERROR stage=config error_type=RuntimeError correlation_id=%s", corr)
             raise RuntimeError("Segurança de acesso requer configuração Supabase completa no servidor.")
-        response = requests.post(
-            f"{url}/rest/v1/rpc/sma_auth_operar",
-            headers={"apikey": role, "Authorization": f"Bearer {role}", "Content-Type": "application/json"},
-            json={"p_acao": acao, "p_dados": dados}, timeout=15,
-        )
+        try:
+            response = requests.post(
+                f"{url}/rest/v1/rpc/sma_auth_operar",
+                headers={"apikey": role, "Authorization": f"Bearer {role}", "Content-Type": "application/json"},
+                json={"p_acao": acao, "p_dados": dados}, timeout=15,
+            )
+        except requests.exceptions.Timeout:
+            logging.getLogger(__name__).warning("AUTH_RPC_ERROR stage=request error_type=Timeout correlation_id=%s", corr)
+            raise RuntimeError("Mecanismo de acesso indisponível.")
+        except requests.exceptions.RequestException as exc:
+            logging.getLogger(__name__).warning("AUTH_RPC_ERROR stage=request error_type=%s correlation_id=%s", type(exc).__name__, corr)
+            raise RuntimeError("Mecanismo de acesso indisponível.")
         if response.status_code != 200:
+            logging.getLogger(__name__).warning("AUTH_RPC_ERROR stage=response status_http=%s correlation_id=%s", response.status_code, corr)
             raise RuntimeError(f"Mecanismo de acesso indisponível (HTTP {response.status_code}).")
         result = response.json()
         if not isinstance(result, dict) or not isinstance(result.get("ok"), bool):
+            logging.getLogger(__name__).warning("AUTH_RPC_ERROR stage=decode error_type=InvalidResponse correlation_id=%s", corr)
             raise RuntimeError("Resposta inválida do mecanismo de acesso.")
+        logging.getLogger(__name__).info("AUTH_RPC_OK stage=response correlation_id=%s", corr)
         return result
     return _seguranca_local(acao, dados)
 
@@ -4278,6 +4290,7 @@ def criar_cadastro_publico_backend(nome: str, email: str, senha: str, captcha_to
     """Cria cadastro via Edge Function usando hash nativo e prova interna opcional."""
     if not supabase_configurado():
         return False, "Cadastro temporariamente indisponível."
+    correlation_id = uuid.uuid4().hex[:12]
     try:
         endpoint = str(st.secrets.get("PUBLIC_SIGNUP_FUNCTION_URL", f"{_supabase_base_url().split('/rest/v1')[0]}/functions/v1/sma-public-signup")).strip()
         anon = str(st.secrets.get("SUPABASE_ANON_KEY", "")).strip()
@@ -4296,10 +4309,12 @@ def criar_cadastro_publico_backend(nome: str, email: str, senha: str, captcha_to
         resposta_http = _http_request("POST", endpoint, headers=headers, json=payload, timeout=25)
         resposta = resposta_http.json() if resposta_http.text else {}
         if resposta_http.status_code < 400 and resposta.get("ok"):
+            logging.getLogger(__name__).info("PUBLIC_SIGNUP_OK stage=response status_http=%s correlation_id=%s", resposta_http.status_code, correlation_id)
             return True, "Cadastro recebido com sucesso! Enviamos um link de confirmação para seu e-mail. Verifique também a pasta de spam."
+        logging.getLogger(__name__).warning("PUBLIC_SIGNUP_ERROR stage=response status_http=%s business_ok=%s correlation_id=%s", resposta_http.status_code, bool(resposta.get("ok")), correlation_id)
         return False, "Não foi possível concluir o cadastro agora. Tente novamente mais tarde."
     except Exception as exc:
-        logging.getLogger(__name__).warning("Cadastro público não confirmado: %s", type(exc).__name__)
+        logging.getLogger(__name__).warning("PUBLIC_SIGNUP_ERROR stage=request error_type=%s correlation_id=%s", type(exc).__name__, correlation_id)
         return False, "Não foi possível concluir o cadastro agora. Tente novamente mais tarde."
 
 
