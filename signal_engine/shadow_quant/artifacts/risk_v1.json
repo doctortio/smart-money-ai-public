@@ -1,0 +1,26 @@
+{
+  "version": "risk_v1",
+  "score_components": [
+    "atr_pct>validation_q0.9",
+    "rel_volume<validation_q0.2",
+    "mtf5 direction conflict",
+    "mtf15 direction conflict",
+    "taker direction conflict",
+    "macd direction conflict",
+    "bb_pos outside [0,1]"
+  ],
+  "atr_high_threshold": 0.12099928978755539,
+  "relative_volume_low_threshold": 0.33220570535692945,
+  "cuts": [
+    0.0,
+    2.0,
+    3.0,
+    7.0
+  ],
+  "bin_names": {
+    "0": "ALTO",
+    "1": "MEDIO",
+    "2": "BAIXO"
+  },
+  "affects_direction": false
+}

@@ -1,0 +1,10 @@
+.streamlit/secrets.toml
+*.db
+*.log
+.streamlit/secrets.toml
+.streamlit/secrets.toml.*
+__pycache__/
+**/__pycache__/
+supabase/.temp/
+*.csv
+

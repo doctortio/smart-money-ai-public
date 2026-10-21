@@ -1,0 +1,23 @@
+{
+  "model_version": "r02.1-buy_primary-20261002",
+  "artifact": "buy_primary",
+  "direction_role": "buy",
+  "model_family": "gradient_boosting",
+  "feature_hash": "0e6972708e835a77f82ea7c330ab71a370b516cd47fb0568723b1cc45e08c5ec",
+  "config_hash": "bb27ca6eeff8be71239e04f944db827ec30212384b4217b398abf4b1613206f9",
+  "threshold": 0.5176149097133773,
+  "training_period": "2026-04-01/2026-06-30 UTC",
+  "validation_period": "2026-07-01/2026-08-31 UTC",
+  "test_period": "2026-09-01/2026-09-30 UTC",
+  "training_rows_before_sampling": 639155,
+  "training_rows_after_sampling": 127831,
+  "library_versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pandas": "3.0.1",
+    "scikit_learn": "1.9.1",
+    "joblib": "1.6.0"
+  },
+  "source_sha256": "87726a5889b02d7b43e999b2dd2cc03bb23c39a62c57125fccdc305b227892d3",
+  "protocol_sha256": "5789027277e822ee39cc05214f13dc48952c77d28ce6d43c025e664a1054232a"
+}

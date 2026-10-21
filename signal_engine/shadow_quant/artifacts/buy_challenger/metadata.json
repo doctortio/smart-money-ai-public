@@ -1,0 +1,23 @@
+{
+  "model_version": "r02.1-buy_challenger-20261002",
+  "artifact": "buy_challenger",
+  "direction_role": "buy",
+  "model_family": "logistic",
+  "feature_hash": "0e6972708e835a77f82ea7c330ab71a370b516cd47fb0568723b1cc45e08c5ec",
+  "config_hash": "2b9aa026570ce1b1c143397fa2d94d7e6ad2420ffc28bba92d49c1d5e0345970",
+  "threshold": 0.5233780927473943,
+  "training_period": "2026-04-01/2026-06-30 UTC",
+  "validation_period": "2026-07-01/2026-08-31 UTC",
+  "test_period": "2026-09-01/2026-09-30 UTC",
+  "training_rows_before_sampling": 639155,
+  "training_rows_after_sampling": 127831,
+  "library_versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pandas": "3.0.1",
+    "scikit_learn": "1.9.1",
+    "joblib": "1.6.0"
+  },
+  "source_sha256": "87726a5889b02d7b43e999b2dd2cc03bb23c39a62c57125fccdc305b227892d3",
+  "protocol_sha256": "5789027277e822ee39cc05214f13dc48952c77d28ce6d43c025e664a1054232a"
+}

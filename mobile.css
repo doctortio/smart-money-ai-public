@@ -1,0 +1,127 @@
+/* All overrides are mobile-only. Streamlit keeps its desktop layout. */
+@media (max-width: 768px) {
+  [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+  [data-testid="stAppViewContainer"] { overflow-y: auto !important; }
+  [data-testid="stMainBlockContainer"], .main .block-container {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 3.75rem .75rem 1.5rem !important;
+  }
+  [data-testid="stMainBlockContainer"] *, .main .block-container * {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+  [data-testid="stVerticalBlock"], [data-testid="stElementContainer"],
+  [data-testid="stForm"], [data-testid="stExpander"] {
+    max-width: 100%;
+    min-width: 0;
+  }
+  [data-testid="stHorizontalBlock"] { gap: .75rem !important; flex-wrap: wrap !important; }
+  [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+  /* Login first on a phone; retain both columns and their desktop order. */
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .usp-login-heading) > [data-testid="stColumn"]:first-child { order: 2; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .usp-login-heading) > [data-testid="stColumn"]:nth-child(2) { order: 1; }
+  /* Zero-height style/component elements must not introduce blank vertical gaps. */
+  [data-testid="stElementContainer"]:has([data-testid="stMarkdownContainer"] > style:only-child),
+  [data-testid="stElementContainer"]:has([data-testid="stMarkdownContainer"] > .usp-login-wrap:empty),
+  [data-testid="stElementContainer"]:has(iframe[title*="smai_browser_session"]) { display: none; }
+  /* Only metric rows become a two-column grid; forms stay full-width. */
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] [data-testid="stMetric"]) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem !important;
+  }
+  [data-testid="stMetric"] {
+    padding: .65rem;
+    border: 1px solid rgba(128,128,128,.22);
+    border-radius: .65rem;
+    height: 100%;
+  }
+  [data-testid="stMetricLabel"] p { font-size: .875rem !important; white-space: normal !important; }
+  [data-testid="stMetricValue"], [data-testid="stMetricValue"] > div {
+    font-size: clamp(1rem, 4.6vw, 1.4rem) !important;
+    line-height: 1.35 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+  [data-testid="stMarkdownContainer"] { overflow-wrap: anywhere; }
+  [data-testid="stMarkdownContainer"] p { font-size: 1rem; line-height: 1.5; }
+  h1, .usp-brand-title { font-size: clamp(1.7rem, 7vw, 2.2rem) !important; line-height: 1.15 !important; }
+  h2, .usp-login-heading { font-size: 1.5rem !important; }
+  h3 { font-size: 1.2rem !important; }
+  [data-testid="stWidgetLabel"] p { font-size: 1rem !important; white-space: normal !important; }
+  input, textarea, select, [data-baseweb="select"] {
+    max-width: 100%;
+    font-size: 16px !important;
+  }
+  input:not([type="checkbox"]):not([type="radio"]), textarea { width: 100%; }
+  [data-testid="stForm"] { padding: .75rem !important; }
+  [data-testid="stButton"], [data-testid="stFormSubmitButton"],
+  [data-testid="stDownloadButton"], [data-testid="stLinkButton"],
+  [data-testid="stElementContainer"]:has([data-testid="stFormSubmitButton"]),
+  [data-testid="stElementContainer"]:has([data-testid="stButton"]) { width: 100% !important; }
+  [data-testid="stButton"] button, [data-testid="stFormSubmitButton"] button,
+  [data-testid="stDownloadButton"] button, [data-testid="stLinkButton"] a {
+    width: 100% !important;
+    min-height: 44px;
+    padding: .65rem .85rem !important;
+    white-space: normal;
+  }
+  [data-testid="stMainBlockContainer"]:has(.usp-login-heading) [data-testid="stCaptionContainer"],
+  [data-testid="stMainBlockContainer"]:has(.usp-login-heading) [data-testid="stCaptionContainer"] p {
+    color: #d1d5db !important;
+  }
+  [data-testid="stMainBlockContainer"]:has(.usp-login-heading) [data-testid="stFormSubmitButton"] button {
+    background: linear-gradient(90deg, #16a34a, #22c55e) !important;
+    color: #ffffff !important;
+  }
+  [data-testid="stSidebar"] { max-width: 88vw !important; }
+  /* Keep the sidebar toggle and menu accessible; hide only decorative candles. */
+  .candles-bg { display: none; }
+  .usp-login-wrap, .usp-login-card, .usp-risk-card {
+    max-width: 100% !important;
+    padding: .85rem !important;
+    margin: .5rem 0 !important;
+    border-radius: .85rem !important;
+  }
+  /* An opening HTML wrapper in st.markdown does not wrap later Streamlit widgets. */
+  .usp-login-wrap:empty, .usp-login-card:empty { display: none; }
+  .usp-subtitle, .usp-feature { font-size: 1rem !important; }
+  .usp-feature { gap: .65rem; margin: .75rem 0; }
+  .usp-risk-card p { font-size: 1rem !important; line-height: 1.5 !important; }
+  .support-card-row { grid-template-columns: 1fr !important; gap: .65rem; }
+  .support-card-row a { min-height: 44px; }
+  .usp-security-row { flex-wrap: wrap; gap: .5rem; }
+  .minha-conta-card { overflow-wrap: anywhere; }
+  [data-testid="stCode"], [data-testid="stCodeBlock"] { width: 100%; max-width: 100%; }
+  [data-testid="stCode"] pre, [data-testid="stCodeBlock"] pre,
+  [data-testid="stCode"] code, [data-testid="stCodeBlock"] code {
+    font-size: .875rem !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.5;
+  }
+  [data-testid="stDataFrame"], [data-testid="stTable"],
+  [data-testid="stMarkdownContainer"]:has(> table) {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  [data-testid="stTable"] table, [data-testid="stMarkdownContainer"] > table { min-width: 44rem; }
+  [data-testid="stTabs"] { max-width: 100%; min-width: 0; }
+  [data-testid="stTabs"] [role="tablist"] { max-width: 100%; overflow-x: auto; gap: .75rem; }
+  [data-testid="stTabs"] [role="tab"] { flex-shrink: 0; min-height: 44px; padding: .5rem; }
+  img { max-width: 100%; height: auto; }
+}
