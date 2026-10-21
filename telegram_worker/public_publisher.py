@@ -50,6 +50,7 @@ def prepare_public_signals(factory: Callable[[str, str], Signal | None] = existi
 def publish_public(
     scheduled_at: datetime,
     *,
+    now: datetime | None = None,
     factory: Callable[[str, str], Signal | None] = existing_motor_factory,
     ledger: SupabaseLedger | None = None,
     send: Callable[[str], int] | None = None,
@@ -66,7 +67,7 @@ def publish_public(
         raise RuntimeError("bot_token_missing")
     if ledger is None or send is None:
         raise RuntimeError("public_dependencies_missing")
-    stamp = validate_scheduled_slot(scheduled_at)
+    stamp = validate_scheduled_slot(scheduled_at, now=now)
     execution_key = f"public|{CHANNEL}|{stamp}|{TIMEFRAME}"
     owner_id = os.getenv("GITHUB_RUN_ID", "local-public")
     if not ledger.reserve(execution_key, channel=CHANNEL, assets=list(ASSETS), timeframe=TIMEFRAME, scheduled_at=stamp, owner_id=owner_id):
