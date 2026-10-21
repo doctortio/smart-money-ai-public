@@ -39,8 +39,10 @@ def test_public_publish_reserves_once_and_marks_unknown_on_timeout(monkeypatch):
         def mark(self, *args): self.calls.append(("mark", args))
     ledger = Ledger()
     def timeout(_): raise TimeoutError("timeout")
+    from datetime import datetime
+    from telegram_worker.worker import TZ
     with pytest.raises(TimeoutError):
-        publish_public(__import__("datetime").datetime.now(), factory=factory, ledger=ledger, send=timeout)
+        publish_public(datetime(2026, 10, 21, 14, 0, tzinfo=TZ), factory=factory, ledger=ledger, send=timeout)
     assert ledger.calls[0][0] == "reserve"
     assert ledger.calls[-1][1][1] == "unknown"
 
