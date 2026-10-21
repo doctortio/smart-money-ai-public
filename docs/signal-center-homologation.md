@@ -4,4 +4,6 @@ O módulo de política (`telegram_worker/signal_center_runtime.py`) valida exata
 
 A configuração persistente e o histórico dependem das migrations `20261022110000_signal_center_admin.sql` e `20261022113000_signal_center_admin_rpc.sql`. A integração remota do worker deve usar uma função intermediária HMAC; não se deve distribuir `service_role` ao GitHub, navegador ou Telegram worker.
 
+Pré-visualizações manuais usam `PreviewStore`: os dois sinais são gerados uma vez, recebem identificador/expiração e a confirmação reutiliza exatamente os sinais armazenados. A camada de persistência remota ainda deve ser conectada ao RPC autenticado antes da homologação.
+
 Homologação: aplicar migrations, publicar a função intermediária, configurar apenas os secrets do gateway e executar prévias manuais sem envio. Rollback: desativar a configuração, interromper o workflow e reverter apenas os objetos adicionados após validação.
