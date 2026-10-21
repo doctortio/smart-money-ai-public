@@ -39,7 +39,7 @@ jobs:
         env:
           PGPASSWORD: isolated-test-only
         run: |
-          psql -h 127.0.0.1 -U postgres -d telegram_test -v ON_ERROR_STOP=1 -c "create role anon; create role authenticated; create role service_role;"
+          psql -h 127.0.0.1 -U postgres -d telegram_test -v ON_ERROR_STOP=1 -c "create role anon; create role authenticated; create role service_role; create table public.clientes (id bigint primary key, email text not null unique, tipo_usuario text, plano text);"
       - name: Apply isolated ledger migrations
         env:
           PGPASSWORD: isolated-test-only

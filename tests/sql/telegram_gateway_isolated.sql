@@ -10,3 +10,10 @@ do $$ begin
   if public.sma_telegram_claim_nonce('nonce-test-1','exec-test-1','reserve','@smartmoneyaioficial',now()+interval '5 minutes') then raise exception 'replay accepted'; end if;
 end $$;
 select public.sma_telegram_claim_nonce('nonce-test-2','exec-test-1','mark','@smartmoneyaioficial',now()+interval '5 minutes');
+insert into public.clientes(id,email,tipo_usuario,plano) values (1,'admin@test.invalid','ADMIN','admin/base'),(2,'user@test.invalid','CLIENTE','mensal');
+do $$ begin
+  if not public.sma_signal_center_is_admin(1,'admin@test.invalid') then raise exception 'admin rejected'; end if;
+  if public.sma_signal_center_is_admin(2,'admin@test.invalid') then raise exception 'id/email spoof accepted'; end if;
+  if public.sma_signal_center_is_admin(2,'user@test.invalid') then raise exception 'user accepted'; end if;
+end $$;
+select public.sma_signal_center_get(1,'admin@test.invalid');
