@@ -4,7 +4,7 @@ import pytest
 
 from scripts import private_test_send as sender
 from telegram_worker.worker import Signal
-from telegram_worker.public_publisher import bundle_message, publish_public
+from telegram_worker.public_publisher import bundle_message, publish_public, validate_scheduled_slot
 
 
 def test_workflow_runs_private_sender_as_module():
@@ -43,6 +43,20 @@ def test_public_publish_reserves_once_and_marks_unknown_on_timeout(monkeypatch):
         publish_public(__import__("datetime").datetime.now(), factory=factory, ledger=ledger, send=timeout)
     assert ledger.calls[0][0] == "reserve"
     assert ledger.calls[-1][1][1] == "unknown"
+
+
+def test_public_slot_rejects_outside_window():
+    from datetime import datetime
+    from telegram_worker.worker import TZ
+    with pytest.raises(RuntimeError, match="execution_outside_window"):
+        validate_scheduled_slot(datetime(2026, 10, 21, 9, 0, tzinfo=TZ), now=datetime(2026, 10, 21, 10, 0, tzinfo=TZ))
+
+
+def test_public_slot_accepts_current_brt_window():
+    from datetime import datetime
+    from telegram_worker.worker import TZ
+    slot = validate_scheduled_slot(datetime(2026, 10, 21, 14, 0, tzinfo=TZ), now=datetime(2026, 10, 21, 14, 10, tzinfo=TZ))
+    assert slot.endswith("-0300")
 
 
 def factory(asset, timeframe):

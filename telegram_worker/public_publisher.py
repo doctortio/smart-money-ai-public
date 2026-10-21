@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, time as dt_time
 from pathlib import Path
 from typing import Callable
 
@@ -11,6 +11,26 @@ import requests
 from .adapter import existing_motor_factory
 from .ledger import SupabaseLedger
 from .worker import ASSETS, CHANNEL, TIMEFRAME, TZ, Signal, format_message
+
+PUBLIC_SLOTS = (dt_time(9, 0), dt_time(14, 0), dt_time(20, 0))
+WINDOW_MINUTES = 15
+
+
+def validate_scheduled_slot(scheduled_at: datetime, *, now: datetime | None = None) -> str:
+    """Return the canonical slot or fail closed outside today's BRT window."""
+    local = scheduled_at.astimezone(TZ)
+    current = (now or datetime.now(TZ)).astimezone(TZ)
+    if local.date() != current.date():
+        raise RuntimeError("scheduled_slot_not_current_day")
+    slot = min(PUBLIC_SLOTS, key=lambda t: abs((local.hour * 60 + local.minute) - (t.hour * 60 + t.minute)))
+    slot_dt = datetime.combine(local.date(), slot, TZ)
+    if abs((local - slot_dt).total_seconds()) > WINDOW_MINUTES * 60:
+        raise RuntimeError("scheduled_slot_invalid")
+    if abs((current - slot_dt).total_seconds()) > WINDOW_MINUTES * 60:
+        raise RuntimeError("execution_outside_window")
+    if current < slot_dt - timedelta(minutes=WINDOW_MINUTES):
+        raise RuntimeError("scheduled_slot_in_future")
+    return slot_dt.strftime("%Y-%m-%dT%H:%M:%S%z")
 
 
 def bundle_message(signals: list[Signal]) -> str:
@@ -46,7 +66,7 @@ def publish_public(
         raise RuntimeError("bot_token_missing")
     if ledger is None or send is None:
         raise RuntimeError("public_dependencies_missing")
-    stamp = scheduled_at.astimezone(TZ).strftime("%Y-%m-%dT%H:%M:%S%z")
+    stamp = validate_scheduled_slot(scheduled_at)
     execution_key = f"public|{CHANNEL}|{stamp}|{TIMEFRAME}"
     owner_id = os.getenv("GITHUB_RUN_ID", "local-public")
     if not ledger.reserve(execution_key, channel=CHANNEL, assets=list(ASSETS), timeframe=TIMEFRAME, scheduled_at=stamp, owner_id=owner_id):
