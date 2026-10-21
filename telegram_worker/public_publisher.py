@@ -10,6 +10,7 @@ import requests
 
 from .adapter import existing_motor_factory
 from .ledger import SupabaseLedger
+from .ledger_gateway import ledger_from_env
 from .worker import ASSETS, CHANNEL, TIMEFRAME, TZ, Signal, format_message
 
 PUBLIC_SLOTS = (dt_time(9, 0), dt_time(14, 0), dt_time(20, 0))
@@ -65,6 +66,8 @@ def publish_public(
     token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     if not token:
         raise RuntimeError("bot_token_missing")
+    if ledger is None:
+        ledger = ledger_from_env()
     if ledger is None or send is None:
         raise RuntimeError("public_dependencies_missing")
     stamp = validate_scheduled_slot(scheduled_at, now=now)
@@ -72,11 +75,11 @@ def publish_public(
     owner_id = os.getenv("GITHUB_RUN_ID", "local-public")
     if not ledger.reserve(execution_key, channel=CHANNEL, assets=list(ASSETS), timeframe=TIMEFRAME, scheduled_at=stamp, owner_id=owner_id):
         raise RuntimeError("duplicate_public_publication")
-    ledger.mark(execution_key, "sending")
+    ledger.mark(execution_key, "sending", owner_id=owner_id)
     try:
         message_id = send(bundle_message(prepare_public_signals(factory)))
     except Exception:
-        ledger.mark(execution_key, "unknown")
+        ledger.mark(execution_key, "unknown", owner_id=owner_id)
         raise
-    ledger.mark(execution_key, "sent", message_id)
+    ledger.mark(execution_key, "sent", message_id, owner_id=owner_id)
     return message_id

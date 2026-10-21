@@ -26,7 +26,7 @@ class SupabaseLedger:
             "p_timeframe": timeframe, "p_scheduled_at": scheduled_at, "p_owner_id": owner_id,
         }))
 
-    def mark(self, execution_key: str, status: str, message_id: int | None = None) -> bool:
+    def mark(self, execution_key: str, status: str, message_id: int | None = None, *, owner_id: str | None = None) -> bool:
         return bool(self._rpc("sma_telegram_mark_publication", {
             "p_execution_key": execution_key, "p_status": status, "p_message_id": message_id,
         }))

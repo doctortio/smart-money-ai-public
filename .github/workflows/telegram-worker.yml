@@ -49,8 +49,8 @@ jobs:
           TELEGRAM_DRY_RUN: "false"
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_LEDGER_GATEWAY_URL: ${{ secrets.TELEGRAM_LEDGER_GATEWAY_URL }}
+          TELEGRAM_LEDGER_HMAC_SECRET: ${{ secrets.TELEGRAM_LEDGER_HMAC_SECRET }}
           PUBLIC_PUBLISH_AUTHORIZED: ${{ secrets.PUBLIC_PUBLISH_AUTHORIZED }}
         run: python -m telegram_worker.public_publisher
       - run: python -m pip install -r requirements.txt
