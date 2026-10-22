@@ -57,8 +57,10 @@ def publish_public(
     send: Callable[[str], int] | None = None,
     config: dict | None = None,
 ) -> int | None:
-    from .signal_center_runtime import validate_persisted_config
+    from .signal_center_runtime import validate_persisted_config, automatic_allowed
     dry_run = os.getenv("TELEGRAM_DRY_RUN", "true").strip().lower() == "true"
+    if not dry_run and os.getenv("PUBLIC_PUBLISH_AUTHORIZED", "") != "PUBLIC_PUBLISH_AUTHORIZED":
+        raise RuntimeError("public_publish_not_authorized")
     if not dry_run:
         gateway = ledger_from_env()
         if gateway is None:
@@ -72,8 +74,8 @@ def publish_public(
         runtime = validate_persisted_config(config)
         if runtime["emergency_stop"]:
             raise RuntimeError("emergency_stop_active")
-        if not dry_run and not runtime["auto_enabled"]:
-            raise RuntimeError("automatic_publication_disabled")
+        if not dry_run and not automatic_allowed(config, scheduled_at.astimezone(TZ).strftime("%H:%M")):
+            raise RuntimeError("automatic_publication_disabled_or_slot_invalid")
         assets, timeframe = runtime["auto_assets"], runtime["timeframe"]
     if os.getenv("TELEGRAM_DRY_RUN", "true").strip().lower() == "true":
         prepare_public_signals(factory, assets=assets, timeframe=timeframe)
