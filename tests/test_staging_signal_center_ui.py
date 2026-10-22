@@ -3,7 +3,7 @@ from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 def test_staging_panel_renders_fail_closed():
-    app = AppTest.from_file(str(Path("staging_signal_center.py")), default_timeout=15).run()
+    app = AppTest.from_file(str(Path(__file__).resolve().parent.parent / "staging_signal_center.py"), default_timeout=15).run()
     assert not app.exception, [str(x.message) for x in app.exception]
     assert any("HOMOLOGAÇÃO VISUAL" in str(x.message) for x in app.warning)
     assert any("indisponível" in str(x.message).lower() for x in app.info)
