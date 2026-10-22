@@ -27,11 +27,13 @@ render_manual_admin_panel(st, verified_session=session, rpc=rpc, signal_factory=
     app.button(key="signal_manual_preview").click().run()
     assert not app.exception
     assert app.session_state["last_rpc"] == "sma_signal_manual_create_preview"
+    app.run()  # The confirmation controls render on the next Streamlit pass.
     assert any("Confirmar e registrar solicitação" in b.label for b in app.button)
     app.button(key="signal_manual_cancel").click().run()
     assert not app.exception
     assert "signal_manual_pending_confirmation" not in app.session_state
     app.button(key="signal_manual_preview").click().run()
+    app.run()
     app.button(key="signal_manual_confirm").click().run()
     assert not app.exception
     assert app.session_state["last_rpc"] == "sma_signal_manual_confirm_preview"
