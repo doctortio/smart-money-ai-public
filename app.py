@@ -7867,8 +7867,53 @@ if aba_admin is not None:
         bloquear_area_admin_para_cliente()
         try:
             from telegram_worker.admin_center import render_signal_center
-            admin_row = obter_cliente_db(st.session_state.get("usuario_logado", "")) or {}
-            render_signal_center(st, rpc=_sb_rpc if supabase_configurado() else None, admin_id=admin_row.get("id"), admin_email=st.session_state.get("usuario_logado", ""))
+            from telegram_worker.admin_session_bridge import resolve_admin_session
+            from telegram_worker.manual_admin_ui import render_manual_admin_panel
+            from telegram_worker.worker import Signal as TelegramSignal
+            if not _supabase_service_role_key():
+                st.info("Central de Sinais: backend administrativo indisponível sem credencial de servidor.")
+            else:
+                admin_email = str(st.session_state.get("usuario_logado", "")).strip().lower()
+                def _admin_clients(email):
+                    return _sb_get("clientes", {"select": "id,email,tipo_usuario,plano", "email": "eq." + email, "limit": "2"})
+                verified_admin = resolve_admin_session(
+                    email=admin_email,
+                    restore_login=restaurar_login_persistente,
+                    is_admin=usuario_e_admin,
+                    fetch_client=_admin_clients,
+                )
+                def _signal_rpc(name, payload):
+                    allowed = {"sma_signal_center_get", "sma_signal_center_history",
+                               "sma_signal_manual_create_preview", "sma_signal_manual_confirm_preview"}
+                    if name not in allowed:
+                        raise PermissionError("signal_center_rpc_not_allowed")
+                    result = _sb_rpc(name, payload)
+                    return result.get("resultado", result) if isinstance(result, dict) else result
+                # Read-only configuration view; changing automatic controls remains blocked.
+                current_config = _signal_rpc("sma_signal_center_get", {
+                    "p_admin_id": verified_admin["admin_id"],
+                    "p_admin_email": verified_admin["email"],
+                })
+                st.markdown("## 🎛️ Central de Sinais — homologação")
+                st.caption("Configuração somente leitura; automação e publicação não são ativadas por este painel.")
+                st.json(current_config)
+                def _signal_factory(asset, timeframe):
+                    if asset not in ("BTCUSDT", "ETHUSDT") or timeframe != "5m":
+                        raise ValueError("unsupported_signal")
+                    signal_data, _ = gerar_sinal_scalp_gemini(asset, timeframe, "Cripto")
+                    direction = str(signal_data.get("direcao", "")).upper()
+                    if direction not in ("COMPRA", "VENDA"):
+                        raise ValueError("invalid_signal_direction")
+                    return TelegramSignal(
+                        asset=asset, direction=direction, timeframe=timeframe,
+                        context=str(signal_data.get("motivo") or "")[:800],
+                        risk=str(signal_data.get("risco") or "N/I"),
+                        created_at=str(signal_data.get("criado_em_iso") or datetime.now(fuso_br).isoformat()),
+                    )
+                render_manual_admin_panel(
+                    st, verified_session=verified_admin, rpc=_signal_rpc,
+                    signal_factory=_signal_factory,
+                )
         except Exception as exc:
             st.warning(f"Central de Sinais indisponível até concluir a homologação: {type(exc).__name__}")
         with st.expander("🧹 Manutenção global da auditoria", expanded=False):
