@@ -32,6 +32,8 @@ render_manual_admin_panel(st, verified_session=session, rpc=rpc, signal_factory=
     app.button(key="signal_manual_cancel").click().run()
     assert not app.exception
     assert "signal_manual_pending_confirmation" not in app.session_state
+    app.run()  # Cancel takes effect on the following Streamlit render.
+    assert any(b.key == "signal_manual_preview" for b in app.button)
     app.button(key="signal_manual_preview").click().run()
     app.run()
     app.button(key="signal_manual_confirm").click().run()
