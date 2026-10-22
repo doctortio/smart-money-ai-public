@@ -53,3 +53,65 @@ DO $$
 BEGIN
  IF (SELECT (public.sma_signal_center_worker_config()->>'emergency_stop')::boolean) IS DISTINCT FROM true THEN RAISE EXCEPTION 'stop not persisted'; END IF;
 END $$;
+
+-- Fail-closed regression checks on disposable PostgreSQL.
+DO $$
+BEGIN
+  PERFORM public.sma_signal_manual_confirm_preview(
+    '00000000-0000-4000-8000-000000000001',1,'admin@test.invalid',
+    '00000000-0000-4000-8000-000000000003','manual:test:duplicate');
+  RAISE EXCEPTION 'duplicate confirmation succeeded';
+EXCEPTION WHEN others THEN
+  IF SQLERRM='duplicate confirmation succeeded' THEN RAISE; END IF;
+END $$;
+DO $$
+BEGIN
+  PERFORM public.sma_signal_manual_create_preview(
+    '00000000-0000-4000-8000-000000000004',1,'admin@test.invalid',
+    ARRAY['BTCUSDT','ETHUSDT'],'5m',
+    '[{"asset":"BTCUSDT"},{"asset":"ETHUSDT"}]'::jsonb,
+    repeat('a',64),now()+interval '5 minutes');
+  RAISE EXCEPTION 'preview bypassed emergency stop';
+EXCEPTION WHEN others THEN
+  IF SQLERRM='preview bypassed emergency stop' THEN RAISE; END IF;
+END $$;
+UPDATE public.sma_signal_center_config SET emergency_stop=false WHERE id=true;
+SELECT public.sma_signal_manual_create_preview(
+ '00000000-0000-4000-8000-000000000005',1,'admin@test.invalid',
+ ARRAY['BTCUSDT','ETHUSDT'],'5m',
+ '[{"asset":"BTCUSDT"},{"asset":"ETHUSDT"}]'::jsonb,
+ repeat('b',64),now()+interval '10 minutes');
+UPDATE public.sma_signal_center_config SET emergency_stop=true WHERE id=true;
+DO $$
+BEGIN
+  PERFORM public.sma_signal_manual_confirm_preview(
+    '00000000-0000-4000-8000-000000000005',1,'admin@test.invalid',
+    '00000000-0000-4000-8000-000000000006','manual:test:stopped');
+  RAISE EXCEPTION 'confirmation bypassed emergency stop';
+EXCEPTION WHEN others THEN
+  IF SQLERRM='confirmation bypassed emergency stop' THEN RAISE; END IF;
+END $$;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.sma_signal_manual_outbox WHERE request_id='00000000-0000-4000-8000-000000000006') THEN
+    RAISE EXCEPTION 'stopped confirmation created outbox';
+  END IF;
+END $$;
+UPDATE public.sma_signal_center_config SET emergency_stop=false WHERE id=true;
+SELECT public.sma_signal_manual_create_preview(
+ '00000000-0000-4000-8000-000000000007',1,'admin@test.invalid',
+ ARRAY['BTCUSDT','ETHUSDT'],'5m',
+ '[{"asset":"BTCUSDT"},{"asset":"ETHUSDT"}]'::jsonb,
+ repeat('c',64),now()+interval '10 minutes');
+UPDATE public.sma_signal_manual_previews SET expires_at=now()-interval '1 minute'
+ WHERE preview_id='00000000-0000-4000-8000-000000000007';
+DO $$
+BEGIN
+  PERFORM public.sma_signal_manual_confirm_preview(
+    '00000000-0000-4000-8000-000000000007',1,'admin@test.invalid',
+    '00000000-0000-4000-8000-000000000008','manual:test:expired');
+  RAISE EXCEPTION 'expired preview confirmed';
+EXCEPTION WHEN others THEN
+  IF SQLERRM='expired preview confirmed' THEN RAISE; END IF;
+END $$;
+UPDATE public.sma_signal_center_config SET emergency_stop=true WHERE id=true;
