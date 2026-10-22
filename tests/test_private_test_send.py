@@ -38,6 +38,15 @@ def test_public_publish_reserves_once_and_marks_unknown_on_timeout(monkeypatch):
         def reserve(self, *args, **kwargs): self.calls.append(("reserve", args, kwargs)); return True
         def mark(self, *args, **kwargs): self.calls.append(("mark", args, kwargs))
     ledger = Ledger()
+    def get_config():
+        return {
+            "auto_assets": ["BTCUSDT", "ETHUSDT"],
+            "manual_assets": ["BTCUSDT", "ETHUSDT"],
+            "timeframe": "5m", "slots": ["09:00", "14:00", "20:00"],
+            "auto_enabled": True, "emergency_stop": False,
+        }
+    ledger.get_config = get_config
+    monkeypatch.setattr("telegram_worker.public_publisher.ledger_from_env", lambda: ledger)
     def timeout(_): raise TimeoutError("timeout")
     from datetime import datetime
     from telegram_worker.worker import TZ
