@@ -54,4 +54,17 @@ jobs:
       - name: SQL security and concurrency checks
         env:
           PGPASSWORD: isolated-test-only
-        run: psql -h 127.0.0.1 -U postgres -d telegram_test -v ON_ERROR_STOP=1 -f tests/sql/telegram_gateway_isolated.sql
+        run: |
+          psql -h 127.0.0.1 -U postgres -d telegram_test -v ON_ERROR_STOP=1 -f tests/sql/telegram_gateway_isolated.sql
+          psql -h 127.0.0.1 -U postgres -d telegram_test -v ON_ERROR_STOP=1 -f tests/sql/signal_center_manual_isolated.sql
+
+      - name: Remote HMAC smoke (no Telegram publishing)
+        env:
+          TELEGRAM_LEDGER_GATEWAY_URL: ${{ secrets.TELEGRAM_LEDGER_GATEWAY_URL }}
+          TELEGRAM_LEDGER_HMAC_SECRET: ${{ secrets.TELEGRAM_LEDGER_HMAC_SECRET }}
+        run: |
+          if [ -z "$TELEGRAM_LEDGER_GATEWAY_URL" ] || [ -z "$TELEGRAM_LEDGER_HMAC_SECRET" ]; then
+            echo "::notice::Remote HMAC smoke SKIPPED: configure TELEGRAM_LEDGER_GATEWAY_URL and TELEGRAM_LEDGER_HMAC_SECRET repository secrets."
+            exit 0
+          fi
+          python tests/telegram_gateway_remote_smoke.py
